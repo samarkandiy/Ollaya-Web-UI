@@ -1,6 +1,8 @@
 # Ollaya Web UI
 
-A browser client for the [Ollaya](../docs/ollaya-api.md) decision server. Built
+![Ollaya Web UI](./web_UI_demo.png)
+
+A browser client for the [Ollaya](./docs/ollaya-api.md) decision server. Built
 with Vite + React + Tailwind v4 + shadcn (Nova preset), no backend.
 
 ## Run it
