@@ -6,7 +6,6 @@ import {
   RefreshCcwIcon,
   PowerIcon,
   Loader2Icon,
-  FlaskConicalIcon,
   ChevronDownIcon,
 } from "lucide-react"
 import {
@@ -41,6 +40,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AnswerCard } from "@/components/decide/AnswerCard"
 import { QuestionEditor } from "@/components/decide/QuestionEditor"
+import { SamplesDialog } from "@/components/decide/SamplesDialog"
+import { loadSample } from "@/components/decide/samples"
 import { useSettingsContext } from "@/components/SettingsContext"
 import { useModels } from "@/lib/hooks"
 import { decide, OllayaError } from "@/lib/ollaya"
@@ -61,44 +62,8 @@ function newChoice(id = "department") {
   }
 }
 
-const SAMPLE = {
-  state:
-    "I was charged twice for my subscription this month. Please refund the second charge.",
-  questions: [
-    {
-      uid: crypto.randomUUID(),
-      id: "department",
-      type: "choice",
-      instructions: "Which team should handle this ticket?",
-      criteria: [
-        { key: "billing", desc: "Payments, invoices and refunds" },
-        { key: "technical", desc: "Bugs, errors and outages" },
-        { key: "account", desc: "Login, profile and settings" },
-      ],
-    },
-    {
-      uid: crypto.randomUUID(),
-      id: "urgency",
-      type: "score",
-      instructions: "How urgent is this ticket?",
-      criteria: [
-        "Can wait",
-        "Needs attention this week",
-        "Needs attention today",
-      ],
-    },
-    {
-      uid: crypto.randomUUID(),
-      id: "refund",
-      type: "noul",
-      instructions: "The customer asks for money back.",
-      noul: {
-        yes: "Asks for a refund",
-        no: "Does not ask for a refund",
-      },
-    },
-  ],
-}
+// First-load sample so the page opens with something to run.
+const INITIAL_SAMPLE = loadSample("support-ticket")
 
 const KEEP_ALIVE_PRESETS = [
   { value: "", label: "Server default" },
@@ -191,8 +156,8 @@ export function DecidePage() {
   const models = useModels()
 
   const [model, setModel] = React.useState("")
-  const [stateInput, setStateInput] = React.useState(SAMPLE.state)
-  const [questions, setQuestions] = React.useState(SAMPLE.questions)
+  const [stateInput, setStateInput] = React.useState(INITIAL_SAMPLE.state)
+  const [questions, setQuestions] = React.useState(INITIAL_SAMPLE.questions)
   const [keepAlivePreset, setKeepAlivePreset] = React.useState("")
   const [keepAliveCustom, setKeepAliveCustom] = React.useState("")
   const [extrasLaya, setExtrasLaya] = React.useState(false)
@@ -226,12 +191,12 @@ export function DecidePage() {
       newChoice(`question_${prev.length + 1}`),
     ])
   }
-  const loadSample = () => {
-    setStateInput(SAMPLE.state)
-    setQuestions(
-      SAMPLE.questions.map((q) => ({ ...q, uid: crypto.randomUUID() }))
-    )
-    toast.info("Loaded sample ticket triage")
+  const applySample = (sample) => {
+    setStateInput(sample.state)
+    setQuestions(sample.questions)
+    setResult(null)
+    setError(null)
+    toast.info(`Loaded sample: ${sample.title}`)
   }
 
   const keepAliveEffective =
@@ -293,10 +258,7 @@ export function DecidePage() {
             <CardTitle>Decide</CardTitle>
             <CardAction>
               <div className="flex items-center gap-1.5">
-                <Button variant="outline" size="sm" onClick={loadSample}>
-                  <FlaskConicalIcon />
-                  Sample
-                </Button>
+                <SamplesDialog onPick={applySample} />
                 <div className="inline-flex overflow-hidden rounded-lg">
                   <Button
                     onClick={() => run("decide")}
